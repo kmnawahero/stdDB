@@ -1,0 +1,77 @@
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBGcwITCN1Vq2Febg1CaOyyaNxh8xoJEA0",
+  authDomain: "student-db-1b4f8.firebaseapp.com",
+  projectId: "student-db-1b4f8",
+  storageBucket: "student-db-1b4f8.firebasestorage.app",
+  messagingSenderId: "936851470891",
+  appId: "1:936851470891:web:031da108047caacfa9c86e",
+  measurementId: "G-8G4F3WRKJ5"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// 🔥 Resize + Compress Image
+function compressImage(file){
+  return new Promise((resolve)=>{
+    const reader = new FileReader();
+    reader.onload = function(event){
+      const img = new Image();
+      img.onload = function(){
+        const canvas = document.createElement("canvas");
+        const maxWidth = 200;
+        const scaleSize = maxWidth / img.width;
+
+        canvas.width = maxWidth;
+        canvas.height = img.height * scaleSize;
+
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+        const compressedBase64 = canvas.toDataURL("image/jpeg", 0.6);
+        resolve(compressedBase64.split(",")[1]);
+      };
+      img.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+window.addStudent = async function() {
+
+  const name = document.getElementById("name").value.trim();
+  const studentClass = document.getElementById("class").value.trim();
+  const roomNo = document.getElementById("roomNo").value.trim();
+  const photoFile = document.getElementById("photo").files[0];
+
+  if(!name || !studentClass || !roomNo || !photoFile){
+    alert("Fill required fields and upload photo!");
+    return;
+  }
+
+  try{
+
+    const photoBase64 = await compressImage(photoFile);
+
+    await addDoc(collection(db,"students"),{
+      name,
+      class: studentClass,
+      roomNo,
+      photoBase64,
+      status: "present",
+      createdAt: serverTimestamp()
+    });
+
+    alert("Student Added Successfully!");
+    document.querySelectorAll("input").forEach(i=>i.value="");
+
+  } catch(err){
+    console.error(err);
+    alert("Error adding student");
+  }
+};
+</script>
